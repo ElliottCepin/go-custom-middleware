@@ -50,6 +50,7 @@ func updateHeader(next http.HandlerFunc) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Request-ID", strconv.Itoa(uuid))
 		next.ServeHTTP(w, r)
+		uuid++
 	}
 }
 
