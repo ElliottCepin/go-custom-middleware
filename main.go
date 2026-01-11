@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"encoding/json"
+	"time"
+	"strconv"
 )
 
 type Calculation struct {
@@ -11,6 +13,7 @@ type Calculation struct {
 	B int
 	Operation string
 }
+var uuid int = 0
 
 func serveCalculate(w http.ResponseWriter, r *http.Request) {
 	if (r.Method != "POST") {
@@ -34,7 +37,23 @@ func serveCalculate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func logger(next http.HandlerFunc) http.HandlerFunc {
+	return func (w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		duration := time.Since(start)
+		fmt.Printf("Method: %q | Path: %q | Response Time: %v\n", r.Method, r.URL.Path, duration)
+	}
+}
+
+func updateHeader(next http.HandlerFunc) http.HandlerFunc {
+	return func (w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Request-ID", strconv.Itoa(uuid))
+		next.ServeHTTP(w, r)
+	}
+}
+
 func main() {
-	http.HandleFunc("/calculate", serveCalculate)
+	http.Handle("/calculate", logger(updateHeader(http.HandlerFunc(serveCalculate))))
 	http.ListenAndServe(":8080", nil)
 }
